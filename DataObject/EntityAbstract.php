@@ -1,0 +1,4 @@
+<?php
+abstract class AtlivaDomainModeling_DataObject_EntityAbstract extends AtlivaDomainModeling_DataObject_DataObjectAbstract{
+
+}
