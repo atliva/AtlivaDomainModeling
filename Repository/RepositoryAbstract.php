@@ -7,7 +7,7 @@ abstract class AtlivaDomainModeling_Repository_RepositoryAbstract {
 
     public function saveEntityCollection(AtlivaDomainModeling_DataObject_Collections $collection){
         foreach($collection as $entity){
-            $this->saveEntity();
+            $this->saveEntity($entity);
         }
     }
     
