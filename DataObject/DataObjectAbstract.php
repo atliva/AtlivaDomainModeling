@@ -205,4 +205,13 @@ abstract class AtlivaDomainModeling_DataObject_DataObjectAbstract {
         }
         return $this->_underScoreToCamelCaseInflector->filter(array('underscored_property_name' => $under_scored_string));
     }
+    /*
+     * _exportDataProperties
+     * returns the available data properties to the repository
+     * This function is underscored meaning it should not be used
+     * for anything other than in the repository to persist data
+     */
+    public function _exportDataProperties(){
+        return $this->_dataProperties;
+    }
 }

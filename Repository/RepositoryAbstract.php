@@ -18,31 +18,14 @@ abstract class AtlivaDomainModeling_Repository_RepositoryAbstract {
      * can still be retained for the use of the repository
      */
     protected $_entitiesInfo = array();
-    /*
-     * $_dbEntityPrimitive
-     * holds base persistance query that gathers the requisite fields to populate entity
-     * the constraints for the query will change depending on specific usage in the
-     * finder methods
-     */
-    protected $_dbEntityPrimitive;
     //Public
+    
     /*
      * Basic query to retrieve all entities without any constraints
      *
      */
     public function findAll($params = array()){
-        $selectStatement = $this->_dbEntityPrimitive;
-        $getEntitiesSelectStatement = $selectStatement;
-        $getNumTotalSelectStatement = $selectStatement;
-        /*
-         * by nature this function expects to fine one OR MORE entities, it will
-         * return a collection which neatly handles the possible array of entities
-         * while providing additional functionalities arrays cannot
-         */
-        return $this->_createEntitiesCollection(array(
-            'get_entities_select_statement'    =>  $getEntitiesSelectStatement,
-            'get_num_total_select_statement'       =>  $getNumTotalSelectStatement
-            ));
+        //return new AtlivaDomainModeling_DataObject_Collections();
     }
     /*
      * saveEntity
@@ -70,53 +53,12 @@ abstract class AtlivaDomainModeling_Repository_RepositoryAbstract {
     public function _createEntity($entityData){
         //use the $entityData to populate the entity
     }
+    /*
+     * _createEntitiesCollection()
+     * Creates a collection of entities based on data from persistance layer
+     */
     protected function _createEntitiesCollection($params){
-        $self =& $this;
-        $defaultParams = array('limit' => null);
-        $params = array_merge($defaultParams, $params);
-        $getEntitiesSelectStatement = $params['get_entities_select_statement'];
-        $getNumTotalSelectStatement = $params['get_num_total_select_statement'];
-        /*
-         * Passes information into the collection as closure functions so the data
-         * can be lazy loaded
-         */
-        return new AtlivaDomainModeling_DataObject_Collections(
-            /*
-             * Closure function to lazy load all the requisite entities
-             * @param mixed $self reference to current repository
-             * @param mixed|string $getEntitiesSelectStatement query string or object that retrieves the necessary list of entities
-             * @param array $params
-             */
-            function() use (&$self,$getEntitiesSelectStatement,$params) {
-                /*
-                 * if $params['limit'] is set, the collection will return a subset of the total entities list
-                 * for example, if there are 1 million users, when calling the usersRepository->findAll(),
-                 * we don't want to load all 1 million user entities, we probably just want a subset thereof. If we want to retrieve
-                 * 100 user entitiess, starting from the 1000th entity, we would set limit as $limit[1000,100];
-                 */
-                if($params['limit']){
-                    $getEntitiesSelectStatement = $getEntitiesSelectStatement
-                        ->limit($params['limit'][0],$params['limit'][1]);
-                }
-                $entitiesDataArray = $getEntitiesSelectStatement->query()->fetchAll();
-                $entitiesArray = array();
-                foreach($entitiesDataArray as $entityData){
-                    $entitiesArray[] = $self->_createEntity($entityData);
-                }
-                return $entitiesArray;
-                },
-            /*
-             * Lets us know how many possible entities there are total. Using the previous example
-             * if we just get a subset 100 entities from a possible million, this function lets us know
-             * there are a million users total
-             */
-            array(
-            'getNumTotal'   =>  function() use (&$self,$getNumTotalSelectStatement){
-                $result = $getNumTotalSelectStatement->reset(Zend_Db_Select::COLUMNS)
-                    ->columns(array('numRows' => 'COUNT(*)'))->query()->fetch();
-                return $result['numRows'];
-                }
-        ));
+
     }
     /*
      * _lookupEntityInDictionary
@@ -172,5 +114,14 @@ abstract class AtlivaDomainModeling_Repository_RepositoryAbstract {
             return $this->_entitiesInfo[$entityId];
         }
         return false;
+    }
+    /*
+     * _getDbEntityPrimitive
+     * holds base persistance query that gathers the requisite fields to populate entity
+     * the constraints for the query will change depending on specific usage in the
+     * finder methods
+     */
+    protected function _getDbEntityPrimitive() {
+
     }
 }
