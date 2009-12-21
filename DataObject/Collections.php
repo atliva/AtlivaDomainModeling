@@ -42,7 +42,23 @@ class AtlivaDomainModeling_DataObject_Collections implements Iterator {
     public function getNumTotal(){
         return $this->_callRepositoryGetterMethod('getNumTotal');
     }
-
+    /*
+     * toArray()
+     * Converts the current collection into an array
+     * @return array 
+     */
+    public function toArray($params = array()){
+        $params = array_merge(array('array_depth' => 0), $params);
+        $currentArrayDepth = $params['array_depth'];
+        $toArrayValues = array();
+        $entities = array();
+        foreach($this as $entity){
+            $entities[] = $entity->toArray(array('array_depth' => $currentArrayDepth));
+        }
+        $toArrayValues['entities'] = $entities;
+        $toArrayValues['num_total'] = $this->getNumTotal();
+        return $toArrayValues;
+    }
     /*
      * Dynamically calls methods based on array keys in $_callRepositoryGetterMethod
      * e.g. $_callRepositoryGetterMethod['doTest']() will be invoked when $this->doTest() is called

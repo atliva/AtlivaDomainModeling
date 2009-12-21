@@ -9,209 +9,114 @@ abstract class AtlivaDomainModeling_DataObject_DataObjectAbstract {
      * $_dataPropertiesToLazyLoad
      * Holds functions that will be called to lazy load values for $_dataProperties
      */
-    protected $_dataPropertiesToLazyLoad = array();
+    protected $_dataPropertyLazyLoaders = array();
 
-    protected $_camelCaseToUnderScoreInflector;
-
-    protected $_underScoreToCamelCaseInflector;
+    protected $_toArrayPropertyMethodMap = array();
     //public
 
     /*
      * __construct
      * @param array $propertyValues set business values for data object
      */
-    public function __construct($propertyValues = null){
-        if($propertyValues){
-            $this->setPropertiesFromArray($propertyValues);
-        }
+    public function __construct(){
+
     }
+
     /*
-     * setPropertiesFromArray
-     *
-     * @param array $propertyValuesArray
-     */
-    public function setPropertiesFromArray(array $propertyValuesArray){
-        $entityProperties = $this->_dataProperties;
-        foreach($entityProperties as $propertyName => $currentPropertyValue){
-            if(!array_key_exists($propertyName, $propertyValuesArray)){
-                continue;
-            }
-            $newPropertyValue = $propertyValuesArray[$propertyName];
-            $setterMethodName = 'set' . $this->_convertUnderScoreToCamelCase($propertyName) . 'FromArrayElement';
-            $this->$setterMethodName($newPropertyValue);
-        }
-    }
-    /*
-     * getPropertiesAsArray
+     * toArray
      *
      * @param array $params
      *              int $params['array_depth'] - determines the number of levels to show the array. If array has subproperties, they will also be converted to arrays.
      *
      */
-    public function getPropertiesAsArray($params = array()){
-        $entityProperties = $this->_dataProperties;
-        $entityValue = array();
+    public function toArray($params = array(), $gettersParams = array()){
+        $toArrayMethodList = $this->_toArrayPropertyMethodMap;
+        $toArrayValues = array();
         $params = array_merge(array('array_depth' => 0), $params);
-        foreach($entityProperties as $propertyName => $currentPropertyValue){
-            $getterMethodName = 'get' . $this->_convertUnderScoreToCamelCase($propertyName) . 'AsArrayElement';
-            $entityValue[$propertyName] = $this->$getterMethodName($params);
-        }
-        return $entityValue;
-    }
-    /*
-     * __call
-     * calls automatic getters and setters for the values in $_dataProperties
-     */
-    public function __call($methodName, $arguments){
-        $prefix = substr($methodName,0,3);
-        $propertyName = substr($methodName,3);
-        
-        switch($prefix){
-            case 'get':
-                return $this->_getter($propertyName, $arguments);
-                break;
-            case 'set':
-                return $this->_setter($propertyName,$arguments);
-                break;
-        }
-    }
+        $currentArrayDepth = $params['array_depth'];
+        $nextArrayDepth = $currentArrayDepth - 1;
+        $canGoDeeper = ($currentArrayDepth > 0);
+        foreach($toArrayMethodList as $arrayPropertyName => $getterMethod){
+            if(is_string($getterMethod)){
+                $getterMethodName = $getterMethod;
+                $isClosure = false;
+            } else {
+               $getterFunction = $getterMethod;
+                $isClosure = true;
+            }
+            if(isset($gettersParams[$arrayPropertyName])){
+                $getterParams = $gettersParams[$arrayPropertyName];
+                if(count($getterParams) == 1){
+                    if($isClosure) {
+                        $getterFunction($getterParams[0]);
+                    } else {
+                        $arrayPropertyValue = $this->$getterMethodName($getterParams[0]);
+                    }
+                } else {
+                    if($isClosure) {
+                        $arrayPropertyValue = call_user_func_array ($getterFunction,$getterParams);
+                    } else {
+                        $arrayPropertyValue = call_user_func_array (array($this,$getterMethodName),$getterParams);
+                    }
 
-    //Protected
-    /*
-     * _setter
-     * handles setter methods based on data properties
-     * e.g. setPropertyName() and setPropertyNameFromArrayElement() will load property into $_dataProperties['property_name']
-     * e.g. setPropertyNameLazyLoad() will load closure function into $_dataPropertiesToLazyLoad['property_name']
-     */
-    protected function _setter($propertyName, $valueArray){
-        $value = $valueArray[0];
-        //e.g. setPropertyName()
-        $underscored_property_name = $this->_convertCamelCaseToUnderScore($propertyName);
-        if (array_key_exists($underscored_property_name, $this->_dataProperties)) {
-            $this->_getAndDeleteLazyPropertyLoader($underscored_property_name);
-            $this->_dataProperties[$underscored_property_name] = $value;
-            return $this;
-        }
-        //e.g. setPropertyNameFromArrayElement()
-        $propertyNameWithoutSuffix = $this->_checkIfEntityPropertyWithoutSuffixExists($propertyName, 'FromArrayElement', -16);
-        if($propertyNameWithoutSuffix){
-            $propertyNameWithoutSuffix = $this->_convertCamelCaseToUnderScore($propertyNameWithoutSuffix);
-            $this->_getAndDeleteLazyPropertyLoader($propertyNameWithoutSuffix);
-            $this->_dataProperties[$propertyNameWithoutSuffix] = $value;
-            return $this;
-        }
-        /*
-         * setPropertyNameLazyLoad()
-         * Sets lazy loading closure function to set the values when getPropertyName() is called
-         */
-        $propertyNameWithoutSuffix = $this->_checkIfEntityPropertyWithoutSuffixExists($propertyName, 'LazyLoad', -8);
-        if($propertyNameWithoutSuffix){
-            $propertyNameWithoutSuffix = $this->_convertCamelCaseToUnderScore($propertyNameWithoutSuffix);
-            $this->_dataPropertiesToLazyLoad[$propertyNameWithoutSuffix] = $value;
-            return $this;
-        }
-    }
-    /*
-     * _getter
-     * handles getter methods based on data properties
-     * e.g. getPropertyName() and getPropertyNameAsArrayElement() returns value from $_dataProperties['property_name']
-     */
-    protected function _getter($propertyName, $arguments){
-        /* getPropertyName()
-         * returns value in $_dataProperties['property_name']
-         * First checks if closure function in $_dataPropertiesToLazyLoad['property_name'].
-         * If it is set, it will be invoked and its value will be set to $_dataProperties['property_name']
-         * and then the value will be returned
-         */
-        $underscored_property_name = $this->_convertCamelCaseToUnderScore($propertyName);
-        if (array_key_exists($underscored_property_name, $this->_dataProperties)) {
-            $this->_checkToLoadLazyProperty($underscored_property_name);
-            return $this->_dataProperties[$underscored_property_name];
-        }
-        //e.g. getPropertyNameAsArrayElement()
-        $propertyNameWithoutSuffix = $this->_checkIfEntityPropertyWithoutSuffixExists($propertyName, 'AsArrayElement', -14);
-        if($propertyNameWithoutSuffix){
-            $propertyNameWithoutSuffix = $this->_convertCamelCaseToUnderScore($propertyNameWithoutSuffix);
-            $params = $arguments[0];
-            $this->_checkToLoadLazyProperty($propertyNameWithoutSuffix);
-            $propertyToConvertToArray = $this->_dataProperties[$propertyNameWithoutSuffix];
-            if($propertyToConvertToArray instanceof AtlivaDomainModeling_DataObject_DataObjectAbstract) {
-                if($params['array_depth'] > 0){
-                    $params['array_depth']--;
-                    return $propertyToConvertToArray->getPropertiesAsArray($params);
-                }
-            } else if($propertyToConvertToArray instanceof AtlivaDomainModeling_DataObject_Collections){
-                if($params['array_depth'] > 0){
-                    $params['array_depth']--;
-                    return $propertyToConvertToArray->getDataListAsArray($params);
                 }
             } else {
-                return $propertyToConvertToArray;
+                if($isClosure) {
+                    $arrayPropertyValue = $getterFunction();
+                } else {
+                    $arrayPropertyValue = $this->$getterMethodName();
+                }
             }
-        }
-    }
-    protected function _checkIfEntityPropertyWithoutSuffixExists($propertyNameWithPossibleSuffix, $suffixName, $lengthOfSuffixFromEnd){
-        $endsInSuffix = ( substr($propertyNameWithPossibleSuffix, $lengthOfSuffixFromEnd) == $suffixName );
-        if($endsInSuffix){
-            $propertyNameWithoutSuffix = substr($propertyNameWithPossibleSuffix, 0, $lengthOfSuffixFromEnd);
-            $propertyNameWithoutSuffix = $this->_convertCamelCaseToUnderScore($propertyNameWithoutSuffix);
-            if(array_key_exists($propertyNameWithoutSuffix, $this->_dataProperties)){
-                return $propertyNameWithoutSuffix;
+            if($canGoDeeper){
+                if(
+                    is_a($arrayPropertyValue, 'AtlivaDomainModeling_DataObject_DataObjectAbstract') ||
+                    is_a($arrayPropertyValue, 'AtlivaDomainModeling_DataObject_Collections')
+                ) {
+                    $arrayPropertyValue = $arrayPropertyValue->toArray(array('array_depth' => $nextArrayDepth));
+                }
             }
+            $toArrayValues[$arrayPropertyName] = $arrayPropertyValue;
         }
-        return false;
+        return $toArrayValues;
     }
-    protected function _checkToLoadLazyProperty($propertyName){
-        if ($propertyLazyLoader = $this->_getAndDeleteLazyPropertyLoader($propertyName)) {
-            $this->_dataProperties[$propertyName] = $propertyLazyLoader();
+    //Protected
+    protected function _getData($propertyName){
+        if(isset($this->_dataPropertyLazyLoaders[$propertyName])){
+            $this->_dataProperties[$propertyName] = $this->_dataPropertyLazyLoaders[$propertyName]();
+            unset($this->_dataPropertyLazyLoaders[$propertyName]);
         }
+        return $this->_dataProperties[$propertyName];
     }
-    protected function _getAndDeleteLazyPropertyLoader($propertyName){
-        $propertyLazyLoader = false;
-        if (array_key_exists($propertyName, $this->_dataPropertiesToLazyLoad)) {
-            $propertyLazyLoader = $this->_dataPropertiesToLazyLoad[$propertyName];
-            unset($this->_dataPropertiesToLazyLoad[$propertyName]);
-            return $propertyLazyLoader;
+    protected function _setData($propertyName, $value){
+        if(isset($this->_dataPropertyLazyLoaders[$propertyName])){
+            unset($this->_dataPropertyLazyLoaders[$propertyName]);
         }
-        return $propertyLazyLoader;
+        $this->_dataProperties[$propertyName] = $value;
+        return $this;
     }
+
     /*
-     * $_camelCaseToUnderScoreInflector()
-     * method to convert camelCase text to under_scored_text
-     * @param string $CamelCasedString
-     */
-    protected function _convertCamelCaseToUnderScore($CamelCasedString){
-        if(!$this->_camelCaseToUnderScoreInflector){
-            $inflector = new Zend_Filter_Inflector(':CamelCasedPropertyName');
-            $inflector->setRules(array(
-                ':CamelCasedPropertyName'  => array('Word_CamelCaseToUnderscore','StringToLower')
-            ));
-            $this->_camelCaseToUnderScoreInflector = $inflector;
-        }
-        return $this->_camelCaseToUnderScoreInflector->filter(array('CamelCasedPropertyName' => $CamelCasedString));
-    }
-    /*
-     * $_underScoreToCamelCaseInflector()
-     * method to convert under_scored_text text to camelCase
-     * @param string $under_scored_string
-     */
-    protected function _convertUnderScoreToCamelCase($under_scored_string){
-        if(!$this->_underScoreToCamelCaseInflector){
-            $inflector = new Zend_Filter_Inflector(':underscored_property_name');
-            $inflector->setRules(array(
-                ':underscored_property_name'  => array('Word_UnderscoreToCamelCase')
-            ));
-            $this->_underScoreToCamelCaseInflector = $inflector;
-        }
-        return $this->_underScoreToCamelCaseInflector->filter(array('underscored_property_name' => $under_scored_string));
-    }
-    /*
-     * _exportDataProperties
+     * _exportData
      * returns the available data properties to the repository
      * This function is underscored meaning it should not be used
      * for anything other than in the repository to persist data
      */
-    public function _exportDataProperties(){
+    public function _exportData(){
         return $this->_dataProperties;
+    }
+
+    /*
+     * _importData
+     * sets the properties from data provided by repository
+     * This function is underscored meaning it should not be used
+     * for anything other than in the repository populate persisted data
+     */
+    public function _importData($dataProperties = null, $dataPropertyLazyLoaders = null){
+        if($dataProperties){
+            $this->_dataProperties = array_merge($this->_dataProperties, $dataProperties);
+        }
+        if($dataPropertyLazyLoaders){
+            $this->_dataPropertyLazyLoaders = array_intersect_key($dataPropertyLazyLoaders, $this->_dataProperties);
+        }
     }
 }

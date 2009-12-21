@@ -22,6 +22,21 @@ abstract class AtlivaDomainModeling_Repository_ZendRepositoryAbstract extends At
             'get_num_total_select_statement'       =>  $getNumTotalSelectStatement
             ));
     }
+    /*
+     * findById
+     *
+     * searches persistence layer for enity with given id, then returns entity if found or null
+     * @param int $entityId
+     * @return null | AtlivaDomainModeling_DataObject_EntityAbstract object
+     */
+    public function findById($entityId) {
+        $dbResultData = $this->_getDbEntityPrimitive()->where('id = ?', $entityId)->query()->fetch();
+        if($dbResultData){
+            return $this->_createEntity($dbResultData);
+        } else {
+            return null;
+        }
+    }
     protected function _createEntitiesCollection($params){
         $self =& $this;
         $defaultParams = array('limit' => null);

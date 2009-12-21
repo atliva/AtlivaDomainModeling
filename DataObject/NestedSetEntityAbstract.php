@@ -60,4 +60,31 @@ abstract class AtlivaDomainModeling_DataObject_NestedSetEntityAbstract extends A
             'context'  =>  $this->_nodePositionChangeContext
             );
     }
+    public function getLft(){
+        return $this->_getData('lft');
+    }
+    public function getRgt(){
+        return $this->_getData('rgt');
+    }
+    public function getImmediateParent(){
+        return $this->_getData('immediate_parent');
+    }
+    public function getAllParents(){
+        return $this->_getData('all_parents');
+    }
+    public function getImmediateChildren(){
+        return $this->_getData('immediate_children');
+    }
+    public function __construct(){
+        parent::__construct();
+        $self = $this;
+        $this->_dataProperties['lft'] = null;
+        $this->_dataProperties['rgt'] = null;
+        $this->_dataProperties['immediate_parent'] = null;
+        $this->_dataProperties['all_parents'] = null;
+        $this->_dataProperties['immediate_children'] = null;
+
+        $this->_toArrayPropertyMethodMap['lft'] = 'getLft';
+        $this->_toArrayPropertyMethodMap['rgt'] = 'getRgt';
+    }
 }
