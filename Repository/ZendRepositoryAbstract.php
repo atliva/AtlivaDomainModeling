@@ -5,6 +5,7 @@
  */
 abstract class AtlivaDomainModeling_Repository_ZendRepositoryAbstract extends AtlivaDomainModeling_Repository_RepositoryAbstract {
     /*
+     * AtlivaDomainModeling_Repository_ZendRepositoryAbstract::findAll()
      * Basic query to retrieve all entities without any constraints
      *
      */
@@ -23,13 +24,17 @@ abstract class AtlivaDomainModeling_Repository_ZendRepositoryAbstract extends At
             ));
     }
     /*
-     * findById
+     * AtlivaDomainModeling_Repository_ZendRepositoryAbstract::findById()
      *
      * searches persistence layer for enity with given id, then returns entity if found or null
      * @param int $entityId
      * @return null | AtlivaDomainModeling_DataObject_EntityAbstract object
      */
     public function findById($entityId) {
+        //Check to see if entity is already in dictionary, this way there would be no more need to query database
+        if($entity = $this->_lookupEntityInDictionary($entityId)){
+            return $entity;
+        }
         $dbResultData = $this->_getDbEntityPrimitive()->where('id = ?', $entityId)->query()->fetch();
         if($dbResultData){
             return $this->_createEntity($dbResultData);

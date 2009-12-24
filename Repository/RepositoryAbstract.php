@@ -36,7 +36,7 @@ abstract class AtlivaDomainModeling_Repository_RepositoryAbstract {
         //return $entity
     }
     /*
-     * saveEntity
+     * AtlivaDomainModeling_Repository_RepositoryAbstract::saveEntity
      * Takes the entity type the repository handling and puts it into the persistance layer
      * @param obj $entity The entity is a subclass of AtlivaDomainModeling_DataObject_EntityAbstract
      */
