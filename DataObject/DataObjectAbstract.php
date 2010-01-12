@@ -36,6 +36,9 @@ abstract class AtlivaDomainModeling_DataObject_DataObjectAbstract {
         $currentArrayDepth = $params['array_depth'];
         $nextArrayDepth = $currentArrayDepth - 1;
         $canGoDeeper = ($currentArrayDepth > 0);
+        if($currentArrayDepth < 0){
+            return null;
+        }
         foreach($toArrayMethodList as $arrayPropertyName => $getterMethod){
             if(is_string($getterMethod)){
                 $getterMethodName = $getterMethod;
@@ -67,12 +70,14 @@ abstract class AtlivaDomainModeling_DataObject_DataObjectAbstract {
                     $arrayPropertyValue = $this->$getterMethodName();
                 }
             }
-            if($canGoDeeper){
-                if(
-                    is_a($arrayPropertyValue, 'AtlivaDomainModeling_DataObject_DataObjectAbstract') ||
-                    is_a($arrayPropertyValue, 'AtlivaDomainModeling_DataObject_Collections')
-                ) {
+            if(
+                is_a($arrayPropertyValue, 'AtlivaDomainModeling_DataObject_DataObjectAbstract') ||
+                is_a($arrayPropertyValue, 'AtlivaDomainModeling_DataObject_Collections')
+            ) {
+                if($canGoDeeper){
                     $arrayPropertyValue = $arrayPropertyValue->toArray(array('array_depth' => $nextArrayDepth));
+                } else {
+                    $arrayPropertyValue = null;
                 }
             }
             $toArrayValues[$arrayPropertyName] = $arrayPropertyValue;
