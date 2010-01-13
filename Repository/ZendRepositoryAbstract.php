@@ -7,21 +7,21 @@ abstract class AtlivaDomainModeling_Repository_ZendRepositoryAbstract extends At
     /*
      * AtlivaDomainModeling_Repository_ZendRepositoryAbstract::findAll()
      * Basic query to retrieve all entities without any constraints
+     * @param array $param
+     *               //limit lets you choose a subset of matching results
+     *               $param['limit'] = array($sql_limit_offset, $num_entries to display)
      *
      */
     public function findAll($params = array()){
         $selectStatement = $this->_getDbEntityPrimitive();
-        $getEntitiesSelectStatement = $selectStatement;
-        $getNumTotalSelectStatement = $selectStatement;
+        $params['get_entities_select_statement'] = $selectStatement;
+        $params['get_num_total_select_statement'] = $selectStatement;
         /*
          * by nature this function expects to fine one OR MORE entities, it will
          * return a collection which neatly handles the possible array of entities
          * while providing additional functionalities arrays cannot
          */
-        return $this->_createEntitiesCollection(array(
-            'get_entities_select_statement'    =>  $getEntitiesSelectStatement,
-            'get_num_total_select_statement'       =>  $getNumTotalSelectStatement
-            ));
+        return $this->_createEntitiesCollection($params);
     }
     /*
      * AtlivaDomainModeling_Repository_ZendRepositoryAbstract::findById()
