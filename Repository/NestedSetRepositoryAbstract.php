@@ -117,8 +117,9 @@ abstract class AtlivaDomainModeling_Repository_NestedSetRepositoryAbstract exten
      * @param array|null $positionChangeInfo details on where the node will be placed in the tree
      * @param bool $isNew
      */
-    protected function _processNodeSave($currentNodeData, $positionChangeInfo, $isNew,$currentNodeId){
-
+    protected function _processNodeSave($currentNodeData, $positionChangeInfo, AtlivaDomainModeling_DataObject_NestedSetEntityAbstract $currentNode){
+        $isNew = ($currentNode->getId() === null);
+        $currentNodeId = $currentNode->getId();
         if(!$positionChangeInfo){
             if($isNew){
                 //should throw exception as new nodes need to have a position in the node tree
@@ -169,6 +170,12 @@ abstract class AtlivaDomainModeling_Repository_NestedSetRepositoryAbstract exten
                     $this->_nstMoveToPrevSibling($contextNode,$currentNodeData);
                 }
                 break;
+        }
+        if($isNew){
+            $categoryId = $this->_db->lastInsertId();
+            $currentNode->_importData(array(
+                'id' => $categoryId
+            ));
         }
         return true;
     }

@@ -18,6 +18,7 @@ abstract class AtlivaDomainModeling_DataObject_NestedSetEntityAbstract extends A
     public function setAsFirstChildOf($sourceNodeOrSourceNodeId){
         $this->_nodePositionChangeType = 'firstChild';
         $this->_nodePositionChangeContext = $sourceNodeOrSourceNodeId;
+        return $this;
     }
     /*
      * setAsLastChildOf
@@ -27,6 +28,7 @@ abstract class AtlivaDomainModeling_DataObject_NestedSetEntityAbstract extends A
     public function setAsLastChildOf($contextNodeOrSourceNodeId){
         $this->_nodePositionChangeType = 'lastChild';
         $this->_nodePositionChangeContext = $contextNodeOrSourceNodeId;
+        return $this;
     }
     /*
      * setAsNextSibblingOf
@@ -36,6 +38,7 @@ abstract class AtlivaDomainModeling_DataObject_NestedSetEntityAbstract extends A
     public function setAsNextSibblingOf($contextNodeOrSourceNodeId){
         $this->_nodePositionChangeType = 'nextSibbling';
         $this->_nodePositionChangeContext = $contextNodeOrSourceNodeId;
+        return $this;
     }
     /*
      * setAsPreviousSibblingOf
@@ -45,6 +48,7 @@ abstract class AtlivaDomainModeling_DataObject_NestedSetEntityAbstract extends A
     public function setAsPreviousSibblingOf($contextNodeOrSourceNodeId){
         $this->_nodePositionChangeType = 'previousSibbling';
         $this->_nodePositionChangeContext = $contextNodeOrSourceNodeId;
+        return $this;
     }
     /*
      * _exportPositionChangeInfo
