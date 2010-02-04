@@ -68,7 +68,7 @@ abstract class AtlivaDomainModeling_Repository_ZendRepositoryAbstract extends At
                  */
                 if($params['limit']){
                     $getEntitiesSelectStatement = $getEntitiesSelectStatement
-                        ->limit($params['limit'][0],$params['limit'][1]);
+                        ->limit($params['limit'][1],$params['limit'][0]);
                 }
                 $entitiesDataArray = $getEntitiesSelectStatement->query()->fetchAll();
                 $entitiesArray = array();
